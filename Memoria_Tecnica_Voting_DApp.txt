@@ -1,0 +1,41 @@
+MEMORIA TÉCNICA - PROYECTO WEB3 VOTING DAPP
+
+1. DATOS RELEVANTES DEL PROYECTO
+- Descripción: Aplicación Descentralizada (DApp) para un sistema de votación basado en el contrato inteligente estándar "Ballot" de Solidity.
+- Funcionalidades principales: 
+  * Votación por candidatos/propuestas.
+  * Delegación de votos (para transferir el peso del voto a otra dirección).
+  * Panel de administración exclusivo para el presidente (Chairperson) que permite otorgar permisos de votación a otras direcciones.
+  * Determinación automática de la propuesta ganadora y la cantidad de votos obtenidos.
+- Frontend: Construido con React (TypeScript) y diseñado con un estilo moderno.
+- Integración Web3: Utiliza la librería `ethers.js` (v6) para interactuar con la blockchain.
+
+2. CONEXIÓN CON LA WALLET METAMASK
+- Implementación: Se realiza a través del contexto global `Web3Context.tsx`.
+- Mecanismo: Se verifica la existencia del objeto inyectado `window.ethereum` en el navegador. 
+- Proveedor: Se instancia mediante `new ethers.BrowserProvider(window.ethereum)`.
+- Eventos: El frontend está suscrito a los eventos `accountsChanged` y `chainChanged` para actualizar el estado o recargar la página en tiempo real si el usuario cambia de cuenta o de red en MetaMask.
+- Gestión de Errores: Manejo explícito de códigos de error comunes (como el rechazo por parte del usuario o las solicitudes pendientes en la extensión).
+
+3. CONEXIÓN CON REMIX
+- Integración del Contrato: El ABI generado al compilar en Remix se exporta y se utiliza en el frontend (`src/artifacts/VotingDAO.json`).
+- Instanciación: Se crea un objeto de contrato inteligente en el frontend usando `new ethers.Contract(address, abi, provider/signer)`.
+- Uso del Signer: Para operaciones de lectura (ej. ver propuestas) se usa el Provider. Para transacciones que alteran el estado de la blockchain (ej. votar, delegar, dar permiso) se utiliza el Signer asociado a la cuenta de MetaMask conectada.
+
+4. ENDPOINT DEL SERVICIO RPC (NODO)
+- En el código actual no se encuentra configurado explícitamente un endpoint de "Google Cloud RPC".
+- En su lugar, como mecanismo de respaldo (fallback) cuando MetaMask no está instalado, se está utilizando un nodo público de la red de pruebas Sepolia:
+  RPC URL Fallback: https://ethereum-sepolia-rpc.publicnode.com
+
+5. DIRECCIÓN DEL CONTRATO DESPLEGADO (REMIX)
+- El contrato "Ballot" con el que interactúa la aplicación está configurado en la siguiente dirección:
+  Contract Address: 0x244759b689415f5f9227Dc893C1c29F122CD0b11
+
+6. FUNDAMENTOS DE CONEXIÓN (NODE, JAVASCRIPT, JSON-RPC)
+- Entorno de Ejecución (Node.js): El frontend se desarrolló y empaqueta utilizando Node.js como entorno de ejecución subyacente para las herramientas de construcción (como Vite) y la gestión de dependencias (npm/yarn), permitiendo servir la aplicación React.
+- Lógica de Aplicación (JavaScript/TypeScript): Toda la lógica interactiva de la DApp está escrita en TypeScript (que se compila a JavaScript). Maneja el estado de la interfaz de usuario, los formularios, y orquesta las llamadas a la blockchain usando la librería de `ethers.js`.
+- Comunicación con la Blockchain (JSON-RPC): 
+  * La interacción entre el frontend (JavaScript) y la red de Ethereum se basa en el protocolo estándar JSON-RPC. 
+  * La librería `ethers.js` actúa como traductor, convirtiendo las llamadas a funciones de los Smart Contracts en peticiones JSON-RPC (como `eth_call` para lectura o `eth_sendTransaction` para escritura).
+  * Con MetaMask: La extensión intercepta estas llamadas JSON-RPC y pide confirmación al usuario antes de firmar y enviar la transacción a la red.
+  * Sin MetaMask (Fallback): Se utiliza un `JsonRpcProvider` que envía directamente peticiones HTTP con formato JSON-RPC al nodo público configurado de Sepolia.
