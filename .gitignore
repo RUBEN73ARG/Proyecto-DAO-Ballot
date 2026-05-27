@@ -24,5 +24,6 @@ dist-ssr
 *.sw?
 
 # Archivos del proyecto que no deben subirse a GitHub
-Codigo_Para_NotebookLM.txt
 
+# Oculta la carpeta completa y todo lo que tenga dentro
+private/
