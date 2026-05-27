@@ -1,0 +1,105 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/**
+ * @title Ballot
+ * @dev Contrato de votación simple con delegación de votos.
+ * Es el contrato estándar de los tutoriales de Solidity, y coincide 
+ * exactamente con el ABI y el Frontend que hemos construido.
+ */
+contract Ballot {
+    // Representa un votante
+    struct Voter {
+        uint weight; // El peso se acumula por delegación
+        bool voted;  // Si es true, esa persona ya votó
+        address delegate; // A quién delegó su voto
+        uint vote;   // Índice de la propuesta votada
+    }
+
+    // Representa un candidato / propuesta
+    struct Proposal {
+        bytes32 name;   // Nombre corto (hasta 32 bytes)
+        uint voteCount; // Número de votos acumulados
+    }
+
+    address public chairperson; // El presidente de la votación
+    mapping(address => Voter) public voters; // Almacena el estado de cada votante
+    Proposal[] public proposals; // Arreglo de propuestas
+
+    // Crear un nuevo proceso de votación indicando los candidatos iniciales
+    constructor(bytes32[] memory proposalNames) {
+        chairperson = msg.sender;
+        voters[chairperson].weight = 1; // El presidente automáticamente tiene derecho a voto
+
+        // Agregar los nombres al arreglo de propuestas
+        for (uint i = 0; i < proposalNames.length; i++) {
+            proposals.push(Proposal({
+                name: proposalNames[i],
+                voteCount: 0
+            }));
+        }
+    }
+
+    // Dar derecho a votar a la dirección `voter`
+    // Solo puede llamarse por el presidente (`chairperson`)
+    function giveRightToVote(address voter) external {
+        require(msg.sender == chairperson, "Solo el presidente puede dar permisos.");
+        require(!voters[voter].voted, "El elector ya emitio su voto.");
+        require(voters[voter].weight == 0, "El elector ya tiene permiso para votar.");
+        
+        voters[voter].weight = 1;
+    }
+
+    // Delegar tu voto a la dirección `to`
+    function delegate(address to) external {
+        Voter storage sender = voters[msg.sender];
+        require(!sender.voted, "Ya emitiste tu voto.");
+        require(to != msg.sender, "No puedes delegar en ti mismo.");
+
+        // Evitar delegaciones circulares
+        while (voters[to].delegate != address(0)) {
+            to = voters[to].delegate;
+            require(to != msg.sender, "Encontrado bucle infinito en la delegacion.");
+        }
+
+        sender.voted = true;
+        sender.delegate = to;
+        Voter storage delegate_ = voters[to];
+        
+        if (delegate_.voted) {
+            // Si el delegado ya votó, sumar directamente al candidato elegido
+            proposals[delegate_.vote].voteCount += sender.weight;
+        } else {
+            // Si no ha votado, sumarle peso a su voto futuro
+            delegate_.weight += sender.weight;
+        }
+    }
+
+    // Emitir el voto por la propuesta `proposal`
+    function vote(uint proposal) external {
+        Voter storage sender = voters[msg.sender];
+        require(sender.weight != 0, "No tienes permiso para votar.");
+        require(!sender.voted, "Ya emitiste tu voto.");
+        require(proposal < proposals.length, "La propuesta no existe.");
+        
+        sender.voted = true;
+        sender.vote = proposal;
+        proposals[proposal].voteCount += sender.weight;
+    }
+
+    // Función auxiliar para calcular qué propuesta va ganando
+    function winningProposal() public view returns (uint winningProposal_) {
+        uint winningVoteCount = 0;
+        for (uint p = 0; p < proposals.length; p++) {
+            if (proposals[p].voteCount > winningVoteCount) {
+                winningVoteCount = proposals[p].voteCount;
+                winningProposal_ = p;
+            }
+        }
+    }
+
+    // Devuelve el nombre del candidato ganador
+    function winnerName() external view returns (bytes32 winnerName_) {
+        winnerName_ = proposals[winningProposal()].name;
+    }
+}
