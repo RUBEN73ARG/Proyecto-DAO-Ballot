@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Archivos del proyecto que no deben subirse a GitHub
+Codigo_Para_NotebookLM.txt
+
